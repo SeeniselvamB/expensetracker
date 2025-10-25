@@ -2,9 +2,22 @@ import React from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { generatePDF } from "./GeneratePDF";
 
-export default function History({ onClose, transactions, clearHistory, startingBalance }) {
-    const handleClear = () => {
-        clearHistory();
+export default function History({ onClose, transactions, clearHistory, startingBalance, setEditingTx, deleteTx }) {
+
+    const handleEdit = (tx) => {
+        setEditingTx(tx);
+        onClose(); // Close history modal
+    };
+
+    const handleDelete = (tx) => {
+        Alert.alert(
+            "Delete Transaction",
+            "Are you sure you want to delete this transaction?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { text: "Delete", style: "destructive", onPress: () => deleteTx(tx.id) }
+            ]
+        );
     };
 
     return (
@@ -29,23 +42,34 @@ export default function History({ onClose, transactions, clearHistory, startingB
                                 </View>
                                 {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                                 <Text style={styles.date}>{item.date}</Text>
+
+                                <View style={styles.actionRow}>
+                                    <TouchableOpacity style={styles.editBtn} onPress={() => handleEdit(item)}>
+                                        <Text style={styles.actionText}>Edit</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
+                                        <Text style={styles.actionText}>X</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         )}
                     />
                 )}
 
-                <TouchableOpacity style={[styles.btn, { backgroundColor: "#ff5555" }]} onPress={handleClear}>
+                <TouchableOpacity style={[styles.btn, { backgroundColor: "#ff5555" }]} onPress={clearHistory}>
                     <Text style={styles.btnText}>Clear History</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.btn, { backgroundColor: "#3498db" }]}
-                    onPress={() => generatePDF(transactions, startingBalance)} // ✅ Pass balance here
+                    onPress={() => generatePDF(transactions, startingBalance)}
                 >
                     <Text style={styles.btnText}>View & Download PDF</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.btn} onPress={onClose}>
+                <TouchableOpacity 
+                     style={[styles.btn, { backgroundColor: "#a8a9aaff" }]} 
+                    onPress={onClose}>
                     <Text style={styles.btnText}>Close</Text>
                 </TouchableOpacity>
             </View>
@@ -56,7 +80,7 @@ export default function History({ onClose, transactions, clearHistory, startingB
 const styles = StyleSheet.create({
     overlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },
     box: { width: "90%", maxHeight: "80%", backgroundColor: "#fff", borderRadius: 15, padding: 20 },
-    title: { fontSize: 22, fontWeight: "bold", textAlign: "center", marginBottom: 15, color: "#333" },
+    title: { fontSize: 22, fontWeight: "bold", textAlign: "center", marginBottom: 15 },
     noTx: { textAlign: "center", fontSize: 16, color: "#888", marginVertical: 20 },
     card: {
         padding: 15,
@@ -79,6 +103,10 @@ const styles = StyleSheet.create({
     debitText: { color: "red" },
     description: { marginTop: 5, fontStyle: "italic", color: "#666" },
     date: { marginTop: 3, fontSize: 12, color: "#999" },
-    btn: { paddingVertical: 12, borderRadius: 8, marginTop: 15, alignItems: "center", backgroundColor: "#007bff" },
+    btn: { paddingVertical: 12, borderRadius: 8, marginTop: 15, alignItems: "center" },
     btnText: { color: "white", fontWeight: "bold", fontSize: 16 },
+    actionRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 10 },
+    editBtn: { backgroundColor: "#3498db", padding: 5, borderRadius: 5, marginRight: 10 },
+    deleteBtn: { backgroundColor: "#e74c3c", padding: 5, borderRadius: 5 },
+    actionText: { color: "white", fontWeight: "bold" },
 });

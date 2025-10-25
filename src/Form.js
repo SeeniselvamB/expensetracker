@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-export default function Form({ onClose, addTransaction }) {
+export default function Form({ onClose, addTransaction, editingTx }) {
     const [type, setType] = useState("credit");
     const [amount, setAmount] = useState("");
     const [category, setCategory] = useState("");
@@ -10,10 +10,20 @@ export default function Form({ onClose, addTransaction }) {
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
 
+    useEffect(() => {
+        if (editingTx) {
+            setType(editingTx.type);
+            setAmount(editingTx.amount.toString());
+            setCategory(editingTx.category);
+            setDescription(editingTx.description || "");
+            setDate(new Date(editingTx.date));
+        }
+    }, [editingTx]);
+
     const handleAdd = async () => {
         if (!amount || !category) return Alert.alert("Error", "Amount and Category are required");
 
-        const newTx = {
+        const tx = {
             type,
             amount: parseFloat(amount),
             category,
@@ -21,7 +31,7 @@ export default function Form({ onClose, addTransaction }) {
             date: date.toISOString().split("T")[0]
         };
 
-        await addTransaction(newTx);
+        await addTransaction(tx);
         setAmount(""); setCategory(""); setDescription("");
         onClose();
     };
@@ -34,7 +44,7 @@ export default function Form({ onClose, addTransaction }) {
     return (
         <View style={styles.overlay}>
             <View style={styles.formBox}>
-                <Text style={styles.title}>Add Transaction</Text>
+                <Text style={styles.title}>{editingTx ? "Edit Transaction" : "Add Transaction"}</Text>
 
                 <View style={{ flexDirection: "row", justifyContent: "space-around", marginVertical: 10 }}>
                     <TouchableOpacity
@@ -53,7 +63,7 @@ export default function Form({ onClose, addTransaction }) {
                 </View>
 
                 <TextInput placeholder="Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} style={styles.input} />
-                <TextInput placeholder="Category (Salary , Rent)" value={category} onChangeText={setCategory} style={styles.input} />
+                <TextInput placeholder="Category" value={category} onChangeText={setCategory} style={styles.input} />
                 <TextInput placeholder="Description" value={description} onChangeText={setDescription} style={styles.input} />
 
                 <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateBtn}>
@@ -71,7 +81,7 @@ export default function Form({ onClose, addTransaction }) {
                 )}
 
                 <TouchableOpacity style={[styles.btn, { backgroundColor: "blue" }]} onPress={handleAdd}>
-                    <Text style={styles.btnText}>Add</Text>
+                    <Text style={styles.btnText}>{editingTx ? "Update" : "Add"}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={[styles.btn, { backgroundColor: "#888" }]} onPress={onClose}>

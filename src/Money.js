@@ -15,6 +15,7 @@ export default function Money() {
     const [showForm, setShowForm] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [startingBalance, setStartingBalanceState] = useState(0);
+    const [editingTx, setEditingTx] = useState(null);
 
     useEffect(() => {
         async function loadData() {
@@ -36,9 +37,25 @@ export default function Money() {
 
     const balance = startingBalance + totalCredit - totalDebit;
 
+    // Add or Update transaction
     const handleAddTransaction = async (tx) => {
-        const newTx = await addTransaction(tx);
-        setTransactions(prev => [newTx, ...prev]);
+        if (editingTx) {
+            // Edit existing
+            const updatedTxs = transactions.map(t => t.id === editingTx.id ? { ...t, ...tx } : t);
+            setTransactions(updatedTxs);
+            await clearAll(); // or save updatedTxs properly to storage
+            setEditingTx(null);
+        } else {
+            const newTx = await addTransaction(tx);
+            setTransactions(prev => [newTx, ...prev]);
+        }
+        setShowForm(false);
+    };
+
+    const handleEditTransaction = (tx) => {
+        setEditingTx(tx);
+        setShowForm(true);
+        setShowHistory(false);
     };
 
     const handleClearHistory = async () => {
@@ -100,10 +117,11 @@ export default function Money() {
                 </View>
             </View>
 
+            {/* Main Buttons */}
             <View style={styles.buttonsRow}>
                 <TouchableOpacity
                     style={[styles.btn, { backgroundColor: "#27ae60" }]}
-                    onPress={() => setShowForm(true)}
+                    onPress={() => { setShowForm(true); setEditingTx(null); }}
                 >
                     <Text style={styles.btnText}>Add Transaction</Text>
                 </TouchableOpacity>
@@ -116,20 +134,22 @@ export default function Money() {
                 </TouchableOpacity>
             </View>
 
-            {/* Reset Button */}
-            <TouchableOpacity
-                style={styles.resetBtn}
-                onPress={handleReset}
-                activeOpacity={0.8}
-            >
-                <Text style={styles.resetBtnText}>Reset</Text>
-            </TouchableOpacity>
+            {/* Reset Button Below */}
+            <View style={[styles.buttonsRow, { marginTop: 10 }]}>
+                <TouchableOpacity
+                    style={[styles.btn, { backgroundColor: "#e74c3c" }]}
+                    onPress={handleReset}
+                >
+                    <Text style={styles.btnText}>Reset</Text>
+                </TouchableOpacity>
+            </View>
 
             {/* Add Transaction Modal */}
             <Modal visible={showForm} transparent animationType="slide">
                 <Form
-                    onClose={() => setShowForm(false)}
+                    onClose={() => { setShowForm(false); setEditingTx(null); }}
                     addTransaction={handleAddTransaction}
+                    editingTx={editingTx}
                 />
             </Modal>
 
@@ -140,6 +160,12 @@ export default function Money() {
                     transactions={transactions}
                     clearHistory={handleClearHistory}
                     startingBalance={startingBalance}
+                    setEditingTx={handleEditTransaction}
+                    deleteTx={async (id) => {
+                        const updatedTx = transactions.filter(t => t.id !== id);
+                        setTransactions(updatedTx);
+                        await clearAll(); // or update storage
+                    }}
                 />
             </Modal>
         </View>
@@ -170,32 +196,15 @@ const styles = StyleSheet.create({
     debitAmount: { fontSize: 20, fontWeight: "bold", color: "red" },
     buttonsRow: { flexDirection: "row", justifyContent: "space-around", marginVertical: 15 },
     btn: {
+        flex: 1,
         paddingVertical: 12,
-        paddingHorizontal: 25,
+        marginHorizontal: 5,
         borderRadius: 8,
         shadowColor: "#000",
         shadowOpacity: 0.15,
         shadowRadius: 5,
         elevation: 3,
+        alignItems: "center",
     },
     btnText: { color: "white", fontWeight: "bold", fontSize: 16 },
-    resetBtn: {
-        backgroundColor: "#e74c3c",
-        alignSelf: "center",
-        width: "100%",
-        marginTop: 10,
-        paddingVertical: 12,
-        borderRadius: 10,
-        shadowColor: "#000",
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-        elevation: 5,
-    },
-    resetBtnText: {
-        color: "#fff",
-        fontWeight: "bold",
-        fontSize: 17,
-        textAlign: "center",
-        letterSpacing: 0.5,
-    },
 });
